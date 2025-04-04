@@ -3,8 +3,8 @@ import colors from 'colors';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import DBConnection from './DataBase/DBConnection.js';
-import Route from './routers/Routes.js';
-
+import Route from './Routers/Routes.js';
+import cookieParser from 'cookie-parser';
 // Load environment variables from .env file
 dotenv.config();
 
@@ -19,7 +19,7 @@ DBConnection();
 
 // Convert plain text to JSON format
 app.use(express.json());
-
+app.use(cookieParser());
 // Port declaration
 const port = process.env.PORT || '5000';  // Fallback to 5000 if PORT is undefined
 

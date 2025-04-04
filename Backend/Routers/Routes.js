@@ -1,5 +1,7 @@
 import express from 'express'
 import { EmailVerification, loginController, logout, RegisterController } from '../Controller/newSignupController.js'
+import { requireSignIn } from '../Middleware/authMiddleware.js'
+
 
 let Route = express.Router()
 
@@ -7,7 +9,7 @@ let Route = express.Router()
 Route.post("/newRegister", RegisterController)
 Route.post("/emailVerification", EmailVerification)
 Route.post("/login", loginController)
-Route.post("/logout", logout)
+Route.get("/logout", requireSignIn, logout)
 
 // newsignuproute.post("/login", loginController)
 // newsignuproute.get("/test", requireSignIn, dummyController)

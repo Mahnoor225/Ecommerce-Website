@@ -4,8 +4,8 @@ import JWT from 'jsonwebtoken';
 import SignupModel from '../Models/UserModel.js';
 // For hashing passwords
 import bcrypt from 'bcrypt'; 
-import { sendEmailFun } from '../DataBase/SendEmail.js';
 import { verifactionEmailTemplate } from '../utils/VerifyEmailTemplate.js';
+import { sendEmailFun } from '../database/SendEmail.js';
 
 // Register Api 
 export const RegisterController = async (req, res) => {
@@ -59,7 +59,7 @@ export const RegisterController = async (req, res) => {
         //     text: "",
         //     html: verifactionEmailTemplate(NewUser, verifyCode),
         // });
-        const verifyEmail = await sendEmailFun (
+        const verifyEmail = await sendEmailFun(
             NewUser.email,  // sendTo
             "Verify Email from Ecommerce App",  // subject
             "",  // text (empty in your case)
@@ -70,15 +70,16 @@ export const RegisterController = async (req, res) => {
         
        console.log(verifyEmail);
         // create a jwt token for verification purpose
-        const token = JWT.sign({ email: NewUser.email, _id: NewUser._id },
-            process.env.JWT_Key
+        const Cookie_token = JWT.sign({ email: NewUser.email, _id: NewUser._id },
+            process.env.JWT_Key,
+            { expiresIn: "1d" }
         );
             // Send response with token
             res.send({
                 success: true,
                 error: false,
                 Message: "User registered successfully! please verify your email",
-                token: token,
+                token : Cookie_token,
                 NewUser
             });
         // // Send response with user data
@@ -194,16 +195,16 @@ export const loginController = async (req, res) => {
         }
 
         // Generate JWT token
-        let token = JWT.sign({ _id: user._id }, process.env.JWT_Key, { expiresIn: '40s' });
+        let token = JWT.sign({ _id: user._id }, process.env.JWT_Key,  { expiresIn: "1d" });
 
         // Set token in cookie
         const cookieoptions = {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',  // Ensure it's secure only in production
+            secure: true,
             sameSite: "None",  // For cross-origin requests
         };
 
-        res.cookie("token", token, cookieoptions);
+        res.cookie("Cookie_token", token, cookieoptions);
 
         res.status(200).send({
             success: true,
@@ -211,6 +212,7 @@ export const loginController = async (req, res) => {
             user: user,
             token: token
         });
+
 
     } catch (error) {
         console.error("Error during login:", error);  // Log error for debugging
@@ -227,13 +229,18 @@ export const loginController = async (req, res) => {
 export const logout = async (req, res) => {
     try {
         const requireSignIn = req.user._id;
+        console.log("User ID:", requireSignIn);
+        
         // Check if token is present in the cookie
         if (!req.cookies.token) {
+            console.log("Token not found in cookies");
             return res.status(401).send({
                 success: false,
                 message: "Please login first"
             });
         }
+
+        console.log("Token found, proceeding to logout");
 
         // Delete token from the cookie
         res.clearCookie("token", {
@@ -241,6 +248,8 @@ export const logout = async (req, res) => {
             secure: true,
             sameSite: "None", // Cross-origin requests allowed for cookies
         });
+
+        console.log("Token cleared successfully");
 
         res.status(200).send({
             success: true,
@@ -255,6 +264,7 @@ export const logout = async (req, res) => {
         });
     }
 };
+
 
  // Get all  Controller
 // Get all Users API
@@ -398,9 +408,9 @@ export const deleteUserController = async (req, res) => {
     }
 };
 
-export const dummyController = (req, res) =>{
-     res.send("hello")     
-}
+// export const dummyController = (req, res) =>{
+//      res.send("hello")     
+// }
 
 
 
