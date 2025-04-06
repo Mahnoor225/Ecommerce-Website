@@ -7,6 +7,17 @@ import bcrypt from 'bcrypt';
 import { verifactionEmailTemplate } from '../utils/VerifyEmailTemplate.js';
 import { sendEmailFun } from '../database/SendEmail.js';
 
+import { v2 as cloudinary } from 'cloudinary';
+import fs from 'fs';
+import { request } from 'express';
+
+export default cloudinary.config({
+//   url: process.env.CLOUDINARY_URL ,
+  cloud_name: 'dizrz6ejl',
+  api_key: '822293373532438',
+  api_secret: 'V4GBX7Uk9brjhr03twZUf_bHSkI',
+  secure: true
+});
 // Register Api 
 export const RegisterController = async (req, res) => {
     try {
@@ -158,9 +169,8 @@ export const EmailVerification = async (req, res) => {
 // Login Api 
 export const loginController = async (req, res) => {
     try {
-        const { email, password } = req.body;  // No need for confirmPassword here
+        const { email, password } = req.body;
 
-        // Check if email and password are provided
         if (!email || !password) {
             return res.status(400).send({
                 success: false,
@@ -168,7 +178,6 @@ export const loginController = async (req, res) => {
             });
         }
 
-        // Check if user exists in the database
         let user = await SignupModel.findOne({ email });
         if (!user) {
             return res.status(404).send({
@@ -177,15 +186,14 @@ export const loginController = async (req, res) => {
             });
         }
 
-        // if (user.status !== "Active") {
-        //     return res.status(400).send({
-        //         message: "Contact admin for account activation",
-        //         success: false,
-        //         isAccountInactive: true // Clearer error status indicating the account is not active
-        //     });
-        // }
+        // ✅ Check if email is verified
+        if (!user.verify_email) {
+            return res.status(401).send({
+                success: false,
+                message: "Email is not verified. Please verify your email before logging in."
+            });
+        }
 
-        // Check if password matches the hashed password
         let match = await comparingPassword(password, user.password);
         if (!match) {
             return res.status(401).send({
@@ -194,14 +202,12 @@ export const loginController = async (req, res) => {
             });
         }
 
-        // Generate JWT token
-        let token = JWT.sign({ _id: user._id }, process.env.JWT_Key,  { expiresIn: "1d" });
+        let token = JWT.sign({ _id: user._id }, process.env.JWT_Key, { expiresIn: "1d" });
 
-        // Set token in cookie
         const cookieoptions = {
             httpOnly: true,
             secure: true,
-            sameSite: "None",  // For cross-origin requests
+            sameSite: "None",
         };
 
         res.cookie("Cookie_token", token, cookieoptions);
@@ -213,9 +219,8 @@ export const loginController = async (req, res) => {
             token: token
         });
 
-
     } catch (error) {
-        console.error("Error during login:", error);  // Log error for debugging
+        console.error("Error during login:", error);
         res.status(500).send({
             success: false,
             message: "Something went wrong while logging in"
@@ -228,42 +233,48 @@ export const loginController = async (req, res) => {
 // logout Api 
 export const logout = async (req, res) => {
     try {
-        const requireSignIn = req.user._id;
-        console.log("User ID:", requireSignIn);
-        
-        // Check if token is present in the cookie
-        if (!req.cookies.token) {
-            console.log("Token not found in cookies");
-            return res.status(401).send({
-                success: false,
-                message: "Please login first"
-            });
+        const userId = req.user?._id;
+        console.log("🧑 User ID:", userId);
+
+        const token = req.cookies?.Cookie_token || req.headers?.authorization?.split(" ")[1];
+        console.log("🔑 Token from cookie or header:", token);
+
+        if (!token) {
+            console.log("Token not found in request");
+            return res.status(401).json({ success: false, message: "Please login first" });
         }
 
-        console.log("Token found, proceeding to logout");
+        // Remove token field from DB (not user)
+        const result = await SignupModel.updateOne(
+            { _id: userId },
+            { $unset: { token: "" } }
+        );
+        console.log("🗑️ Token field removed from user in DB:", result);
 
-        // Delete token from the cookie
-        res.clearCookie("token", {
+        // Clear cookie
+        res.clearCookie("Cookie_token", {
             httpOnly: true,
             secure: true,
-            sameSite: "None", // Cross-origin requests allowed for cookies
+            sameSite: "None",
         });
 
-        console.log("Token cleared successfully");
-
-        res.status(200).send({
+        res.status(200).json({
             success: true,
-            message: "Logged out successfully"
+            message: "Logged out successfully",
+            userId,
+            result,
         });
 
     } catch (error) {
-        console.error("Error during logout:", error); // Log the error for debugging purposes
-        res.status(500).send({
+        console.error("❌ Error during logout:", error);
+        res.status(500).json({
             success: false,
-            message: "Something went wrong while logging out"
+            message: "Something went wrong while logging out",
         });
     }
 };
+
+
 
 
  // Get all  Controller
@@ -412,5 +423,145 @@ export const deleteUserController = async (req, res) => {
 //      res.send("hello")     
 // }
 
+
+// upload image 
+
+var imagesArray = [];
+
+export async function useAvatarController(req, res) {
+    try {
+        const userId = req.user._id;
+        const { files } = req;
+
+        const user = await SignupModel.findOne({ _id: userId });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        if (!files || files.length === 0) {
+            return res.status(400).json({
+                error: true,
+                success: false,
+                message: "No image files were uploaded."
+            });
+        }
+
+        const options = {
+            unique_filename: false,
+            overwrite: false,
+        };
+
+        const imagesArray = [];
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+
+            // Remove previous avatar if exists
+            if (user.avatar) {
+                const urlParts = user.avatar.split('/');
+                const publicId = urlParts[urlParts.length - 1].split('.')[0];
+                try {
+                    const delResult = await cloudinary.uploader.destroy(publicId);
+                    console.log("🗑️ Previous image deleted:", delResult);
+                } catch (deleteErr) {
+                    console.warn("⚠️ Failed to delete previous avatar:", deleteErr.message);
+                }
+            }
+
+            try {
+                const result = await cloudinary.uploader.upload(file.path, options);
+                imagesArray.push(result.secure_url);
+                console.log("✅ Uploaded image:", result.secure_url);
+                fs.unlinkSync(file.path);
+            } catch (uploadError) {
+                console.error("❌ Error uploading:", uploadError);
+                return res.status(500).json({
+                    error: true,
+                    success: false,
+                    message: "Error uploading image to Cloudinary.",
+                    details: uploadError.message,
+                });
+            }
+        }
+
+        user.avatar = imagesArray[0];
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            _id: userId,
+            message: "Images uploaded successfully.",
+            avatar: imagesArray[0],
+            imagesArray,
+        });
+
+    } catch (error) {
+        console.error('❌ Server error:', error);
+        return res.status(500).json({
+            error: true,
+            success: false,
+            message: "Internal server error during image upload.",
+            details: error.message,
+        });
+    }
+}
+
+
+
+// removeimageCloundary 
+
+export async function removeImageController(req, res) {
+    try {
+        const imgurl = req.query.img;
+
+        if (!imgurl) {
+            return res.status(400).json({
+                error: true,
+                success: false,
+                message: "Missing 'img' query parameter.",
+            });
+        }
+
+        const urlArr = imgurl.split('/');
+        const lastSegment = urlArr[urlArr.length - 1];
+
+        if (!lastSegment || !lastSegment.includes('.')) {
+            return res.status(400).json({
+                error: true,
+                success: false,
+                message: "Invalid image URL format.",
+            });
+        }
+
+        const publicId = lastSegment.split('.')[0];
+
+        const result = await cloudinary.uploader.destroy(publicId);
+        console.log("📦 Cloudinary Response:", result);
+
+        if (result.result === 'not found') {
+            return res.status(404).json({
+                error: true,
+                success: false,
+                message: "Image not found in Cloudinary.",
+            });
+        }
+
+        return res.status(200).json({
+            message: "ok",
+            success: true,
+            message: "✅ Image removed successfully from Cloudinary.",
+        });
+    } catch (error) {
+        return res.status(500).json({
+            error: true,
+            success: false,
+            message: "Error removing image from Cloudinary.",
+            details: error.message,
+        });
+    }
+}
 
 

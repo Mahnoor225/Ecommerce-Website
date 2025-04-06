@@ -1,39 +1,42 @@
-// import JWT from 'jsonwebtoken'
-// import express from 'express'
-
-// export const requireSignIn = async (req, res, next) =>{
-//     try {
-//             JWT.verify(req.headers.authorization, process.env.JWT_Key)
-//             // req.user = decode
-//             next()
-//     } catch (error) 
-//     {
-//          console.log(JWT ,'error')   
-//     }
-// }
-
-// Middleware/requireSignIn.js
-import JWT from 'jsonwebtoken';
-
+import JWT from "jsonwebtoken";
 export const requireSignIn = async (req, res, next) => {
-    // Log all headers to check if the Authorization header is present
     console.log('Request Headers:', req.headers);
 
-    // Extract the token from the Authorization header
-    const token = req.headers.authorization?.split(' ')[1];  // Split by 'Bearer ' and get the token part
+    let token = null;
 
+    // 1. Check Authorization header
+    if (req.headers?.authorization?.startsWith("Bearer ")) {
+        token = req.headers.authorization.split(" ")[1];
+        console.log("✅ Token found in Authorization header");
+    }
+
+    // 2. Check cookies
+    if (!token && req.cookies?.Cookie_token) {
+        token = req.cookies.Cookie_token;
+        console.log("✅ Token found in cookies");
+    }
+
+    // 3. If no token, deny access
     if (!token) {
+        console.log("❌ Token not found in headers or cookies");
         return res.status(401).json({ message: "Authorization token is required" });
     }
 
+    // 4. Verify token
     try {
-        // Verify the token
         const decoded = JWT.verify(token, process.env.JWT_Key);
         req.user = decoded;
+        req.token = token; // Also attach token if needed later (like in logout)
+        console.log("✅ Token successfully verified:", decoded);
         next();
     } catch (error) {
-        console.error(error);
+        console.error("❌ JWT Verification Error:", error.message);
         return res.status(401).json({ message: "Invalid or expired token" });
     }
 };
+
+
+
+
+
 

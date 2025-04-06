@@ -1,6 +1,7 @@
 import express from 'express'
-import { EmailVerification, loginController, logout, RegisterController } from '../Controller/newSignupController.js'
+import { EmailVerification, loginController, logout, RegisterController, removeImageController, updateUserController, useAvatarController } from '../Controller/newSignupController.js'
 import { requireSignIn } from '../Middleware/authMiddleware.js'
+import upload from '../Middleware/multer.js'
 
 
 let Route = express.Router()
@@ -8,15 +9,13 @@ let Route = express.Router()
 
 Route.post("/newRegister", RegisterController)
 Route.post("/emailVerification", EmailVerification)
-Route.post("/login", loginController)
-Route.get("/logout", requireSignIn, logout)
+Route.post("/login", loginController);
+Route.get("/logout", requireSignIn, logout),
+// Route for uploading user avatar
+Route.put("/user_Avatar", requireSignIn, upload.array("avatar"), useAvatarController);
+Route.delete("/deleteimage", requireSignIn, removeImageController);
 
-// newsignuproute.post("/login", loginController)
-// newsignuproute.get("/test", requireSignIn, dummyController)
-// // newsignuproute.get("/test", dummyController)
-// newsignuproute.get("/loginGetAllData", getAllUsersController)
-// newsignuproute.put("/loginGetAllData/:id", updateUserController)
-// newsignuproute.delete("/deleteUser/:id", deleteUserController)
 
+Route.put("/update/:id", requireSignIn, updateUserController);
 
 export default Route
