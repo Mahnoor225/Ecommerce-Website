@@ -1,5 +1,5 @@
 import express from 'express'
-import { EmailVerification, loginController, logout, RegisterController, removeImageController, updateUserController, useAvatarController } from '../Controller/newSignupController.js'
+import { EmailVerification, loginController, logout, RegisterController, removeImageController, resetForgetPassword, sendForgetPasswordOtp, updateUserController, useAvatarController, verifyForgetPasswordOtp } from '../Controller/newSignupController.js'
 import { requireSignIn } from '../Middleware/authMiddleware.js'
 import upload from '../Middleware/multer.js'
 
@@ -17,5 +17,8 @@ Route.delete("/deleteimage", requireSignIn, removeImageController);
 
 
 Route.put("/update/:id", requireSignIn, updateUserController);
+Route.post("/forgetPassword", sendForgetPasswordOtp);
+Route.post("/verify-ForgetPassword",  verifyForgetPasswordOtp);
+Route.put("/reset-ForgetPassword",  resetForgetPassword);
 
 export default Route
