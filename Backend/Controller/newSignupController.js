@@ -9,8 +9,6 @@ import { sendEmailFun } from '../database/SendEmail.js';
 
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
-import { request } from 'express';
-import { error } from 'console';
 
 export default cloudinary.config({
 //   url: process.env.CLOUDINARY_URL ,
@@ -133,7 +131,7 @@ export const EmailVerification = async (req, res) => {
             // Generate a new OTP if expired
             const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
             user.otp = newOtp;
-            user.otpExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+            user.otpExpiry = Date.now() + 2600000; // 10 minutes expiry
             await user.save();
         
             // Log the OTP for debugging
@@ -252,6 +250,7 @@ export const loginController = async (req, res) => {
         });
     }
 };
+
 
 // export const loginController = async (req, res) => {
 //     try {
@@ -558,7 +557,6 @@ export const deleteUserController = async (req, res) => {
 // upload image 
 
 var imagesArray = [];
-
 export async function useAvatarController(req, res) {
     try {
         const userId = req.user._id;
@@ -639,7 +637,6 @@ export async function useAvatarController(req, res) {
         });
     }
 }
-
 
 
 // removeimageCloundary 
