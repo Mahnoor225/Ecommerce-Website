@@ -157,6 +157,7 @@ export async function getCartItems(req, res) {
 
 
     // DeleteCartitem
+    // localhost:7000/api/Cart//delete-cart-item/67f65129ad55f37c53a265b2
     export async function deleteCartItem(req, res) {
       try {
         const userId = req.user._id; // Assuming auth middleware sets this
