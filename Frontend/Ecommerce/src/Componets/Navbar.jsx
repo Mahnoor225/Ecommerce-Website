@@ -1,4 +1,5 @@
 import { FaUser, FaHeart, FaShoppingCart, FaBell } from "react-icons/fa"
+import { Link } from "react-router-dom"
 
 const Navbar = () => {
   return (
@@ -30,19 +31,22 @@ const Navbar = () => {
 
           {/* User actions */}
           <div className="flex items-center gap-6">
-            {/* Login/Register */}
-            <a href="/login" className="flex items-center gap-2 text-gray-700 transition-colors hover:text-[#FF5252]">
-              <FaUser className="text-lg" />
-              <span className="text-sm">Login / Register</span>
-            </a>
+         {/* Login/Register */}
+        <div className="flex items-center gap-2 text-gray-700 transition-colors hover:text-[#FF5252]">
+         <FaUser className="text-lg" />
+         <Link to="/login" className="text-sm hover:text-[#FF5252]">Login</Link>
+         <span className="text-sm">/</span>
+         <Link to="/register" className="text-sm hover:text-[#FF5252]">Register</Link>
+        </div>
+
 
             {/* Notification */}
-            <a href="/notifications" className="relative  text-gray-700 hover:text-[#FF5252] transition-colors">
+            <Link to="/"  className="relative  text-gray-700 hover:text-[#FF5252] transition-colors">
               <FaBell className="text-2xl" />
               <span className="absolute -top-2 -right-2 bg-[#FF5252] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                 0
               </span>
-            </a>
+            </Link>
 
             {/* Wishlist */}
             <a href="/wishlist" className="relative text-gray-700 hover:text-[#FF5252] transition-colors">
