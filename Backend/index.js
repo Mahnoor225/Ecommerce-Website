@@ -7,6 +7,7 @@ import Route from './Routers/Routes.js';
 import cookieParser from 'cookie-parser';
 import CategoryRoute from './Routers/CategoryRoutes.js';
 import ProductRoute from './Routers/ProductRoutes.js';
+import CartRoute from './Routers/CartRoutes.js';
 // Load environment variables from .env file
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use(cors());
 app.use('/api/userRoute', Route);
 app.use('/api/category', CategoryRoute);
 app.use('/api/product', ProductRoute);
+app.use('/api/Cart', CartRoute);
 // Server listening
 app.listen(port, () => {
   console.log(`Server is started at port ${port}`.bgMagenta);
