@@ -1,31 +1,131 @@
- 
-import { useState } from "react"
-import { Link } from "react-router-dom" 
-import { Eye, EyeOff } from "lucide-react"
-
-const Register = () =>  {
-  const [showPassword, setShowPassword] = useState(false)
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
+import Swal from "sweetalert2";
+import Cookies from "js-cookie";
+import { useDispatch } from "react-redux";
+import { registerSuccess } from "../../redux/AuthSlice";
+import { TailSpin } from 'react-loader-spinner'
+const Register = () => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
-  })
-const onchangeinput = (e) => {
-  const { name, value } = e.target
-  setFormData(()=>{
-    return{
-      ...formData,
-      [name]: value,
-    }
-  })
-}
-console.log(formData);
+  });
 
-const handlesubmit = async (e) => {
-  e.preventDefault();
-  await fetch("").then()
-  
-}
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  // Regex for Email Validation
+  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+
+  // Regex for Password Validation (At least one uppercase, one number, and one special character)
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+  const onchangeinput = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handlesubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const { name, email, password } = formData;
+
+    // Email Validation
+    if (!emailRegex.test(email)) {
+      Swal.fire({
+        title: "Error",
+        text: "Please enter a valid email address.",
+        icon: "error",
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Password Validation
+    if (!passwordRegex.test(password)) {
+      Swal.fire({
+        title: "Error",
+        text: "Password must be at least 8 characters long, contain one uppercase letter, one number, and one special character.",
+        icon: "error",
+      });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      let result = await fetch("http://localhost:7000/api/userRoute/newRegister", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, password }),
+        credentials: 'include', // Ensure cookies are sent with the request
+      });
+
+      result = await result.json();
+
+      console.log(result); // Log the result to check the structure
+
+      setLoading(false);
+      if (result.success) {
+        // Store the token in cookies after successful registration
+        Cookies.set('authToken', result.token, { expires: 1 });
+        Cookies.set('userEmail', result.NewUser.email, { expires: 1 });
+        Cookies.set('userName', result.NewUser.name, { expires: 1 });
+
+        // Dispatch registerSuccess to update Redux store
+        dispatch(registerSuccess({
+          name: result.NewUser.name,
+          email: result.NewUser.email,
+          token: result.token,
+        }));
+
+        Swal.fire({
+          title: "Success",
+          text: result.Message,
+          icon: "success",
+        });
+        navigate(`/verify`);
+      } else {
+        Swal.fire({
+          title: "Error",
+          text: result.Message,
+          icon: "error",
+        });
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      setLoading(false);
+      Swal.fire({
+        title: "Error",
+        text: "Something went wrong. Please try again later.",
+        icon: "error",
+      });
+    }
+  };
+
+const loader = () => {
+  return (
+    <div className="flex justify-center items-center ">
+    <TailSpin
+      visible={true}
+      height="30"
+      width="30"
+      color="#FFFFFF"
+      ariaLabel="tail-spin-loading"
+    />
+  </div>  
+  );
+};
+
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gray-50">
       <div className="w-full max-w-md bg-white p-6 sm:p-8 rounded-lg shadow-md">
@@ -33,13 +133,13 @@ const handlesubmit = async (e) => {
           <h1 className="text-2xl font-bold">Create an account</h1>
           <p className="text-gray-600 mt-2">
             Already have an account?{" "}
-            <Link href="/login" className="text-rose-600 hover:underline">
+            <Link to="/login" className="text-rose-600 hover:underline">
               Log in instead!
             </Link>
           </p>
         </div>
 
-        <form   className="space-y-6" onSubmit={handlesubmit}>
+        <form className="space-y-6" onSubmit={handlesubmit}>
           <div className="space-y-2">
             <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
               Full Name
@@ -63,7 +163,6 @@ const handlesubmit = async (e) => {
               name="email"
               type="email"
               onChange={onchangeinput}
-           
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
             />
@@ -79,7 +178,6 @@ const handlesubmit = async (e) => {
                 name="password"
                 type={showPassword ? "text" : "password"}
                 onChange={onchangeinput}
-        
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 pr-10"
               />
@@ -103,16 +201,18 @@ const handlesubmit = async (e) => {
             </div>
           </div>
 
+          {/* Submit Button with Loading State */}
           <button
             type="submit"
-            className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"
+            disabled={loading}
+            className={`w-full py-2 px-4 border bg-[#FF5252] border-transparent rounded-md shadow-sm text-sm font-semibold text-white `}
           >
-            Create account
+            {loading ? loader() : "Create account"}
           </button>
         </form>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Register
+export default Register;

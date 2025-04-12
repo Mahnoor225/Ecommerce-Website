@@ -53,10 +53,10 @@ export const RegisterController = async (req, res) => {
             email,
             password: finalHashedPassword, 
             otp: verifyCode,
-            otpExpiry: Date.now() + 600000,
+            otpExpiry: Date.now() + 600000,  //10 minutes//
             // role: role || 'user'  
         }).save();
-        console.log("NewUser object before sending email:", NewUser);
+        console.log("NewUser object before sending email:", NewUser.email);
 
         // Send EmailVerification
         
@@ -78,13 +78,13 @@ export const RegisterController = async (req, res) => {
             NewUser.name  // name
         );
         
-       console.log(verifyEmail);
-        // create a jwt token for verification purpose
+        console.log(verifyEmail);
+        // Create a JWT token for verification purpose
         const Cookie_token = JWT.sign({ email: NewUser.email, _id: NewUser._id },
-            process.env.JWT_Key,
+           process.env.JWT_Key,
             { expiresIn: "1d" }
         );
-            // Send response with token
+
             res.send({
                 success: true,
                 error: false,
@@ -92,12 +92,6 @@ export const RegisterController = async (req, res) => {
                 token : Cookie_token,
                 NewUser
             });
-        // // Send response with user data
-        // res.status(201).send({
-        //     success: true,
-        //     Message: "User registered successfully",
-        //     NewUser
-        // });
     } catch (error) {
         res.status(500).send({
             success: false,
@@ -107,12 +101,90 @@ export const RegisterController = async (req, res) => {
     }
 };
 
-
 // Email Varifation 
+// export const EmailVerification = async (req, res) => {
+//     try {
+//         const { email, otp } = req.body;
+//        console.log(email, otp);
+//         // Find user by email
+//         const user = await SignupModel.findOne({ email });
+
+//         if (!user) {
+//             return res.status(404).send({
+//                 success: false,
+//                 Message: "User not found",
+//                 error: "User not found"
+//             });
+//         }
+//         // If OTP is expired, send a message and resend a new OTP
+//         const isExpired = Date.now() > user.otpExpiry;
+
+//         if (isExpired) {
+//             // Generate a new OTP if expired
+//             const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+//             user.otp = newOtp;
+//             user.otpExpiry = Date.now() + 2600000; // 10 minutes expiry
+//             await user.save();
+        
+//             // Log the OTP for debugging
+//             console.log('Generated OTP:', newOtp);
+    
+//             // Send OTP to user's email
+//             await sendEmailFun(
+//                 user.email,
+//                 "Verify your email",
+//                 "",
+//                 verifactionEmailTemplate(user.name, newOtp),  // Pass OTP here
+//                 newOtp,
+//                 user.name
+//             );
+        
+//             return res.status(400).send({
+//                 success: false,
+//                 Message: "OTP has expired. A new OTP has been sent to your email.",
+//                 error: "OTP expired"
+//             });
+//         }
+        
+
+//         // If OTP is valid and not expired
+//         const isValid = user.otp === otp;
+
+//         if (isValid) {
+//             // OTP is valid, mark email as verified
+//             user.verify_email = true;
+//             user.otp = null;
+//             user.otpExpiry = null;
+//             await user.save();
+
+//             return res.status(200).send({
+//                 success: true,
+//                 Message: "Email verified successfully",
+//                 user
+//             });
+//         } else {
+//             // Invalid OTP
+//             return res.status(400).send({
+//                 success: false,
+//                 Message: "Invalid OTP",
+//                 error: "Invalid OTP"
+//             });
+//         }
+
+//     } catch (error) {
+//         console.error("Error during email verification:", error);
+//         res.status(500).send({
+//             success: false,
+//             Message: "Internal Server Error during email verification",
+//             error: error.message
+//         });
+//     }
+// };
 export const EmailVerification = async (req, res) => {
     try {
         const { email, otp } = req.body;
-       console.log(email, otp);
+        console.log(email, otp);
+
         // Find user by email
         const user = await SignupModel.findOne({ email });
 
@@ -124,36 +196,17 @@ export const EmailVerification = async (req, res) => {
             });
         }
 
-        // If OTP is expired, send a message and resend a new OTP
+        // Check if OTP has expired
         const isExpired = Date.now() > user.otpExpiry;
 
         if (isExpired) {
-            // Generate a new OTP if expired
-            const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-            user.otp = newOtp;
-            user.otpExpiry = Date.now() + 2600000; // 10 minutes expiry
-            await user.save();
-        
-            // Log the OTP for debugging
-            console.log('Generated OTP:', newOtp);
-        
-            // Send OTP to user's email
-            await sendEmailFun(
-                user.email,
-                "Verify your email",
-                "",
-                verifactionEmailTemplate(user.name, newOtp),  // Pass OTP here
-                newOtp,
-                user.name
-            );
-        
+            // OTP expired
             return res.status(400).send({
                 success: false,
-                Message: "OTP has expired. A new OTP has been sent to your email.",
+                Message: "OTP has expired. Please request a new one.",
                 error: "OTP expired"
             });
         }
-        
 
         // If OTP is valid and not expired
         const isValid = user.otp === otp;
@@ -178,7 +231,6 @@ export const EmailVerification = async (req, res) => {
                 error: "Invalid OTP"
             });
         }
-
     } catch (error) {
         console.error("Error during email verification:", error);
         res.status(500).send({
@@ -188,6 +240,70 @@ export const EmailVerification = async (req, res) => {
         });
     }
 };
+
+
+export const resendOtp = async (req, res) => {
+    try {
+        const { email } = req.body;
+        console.log(email);
+
+        // Find user by email
+        const user = await SignupModel.findOne({ email });
+        
+        if (!user) {
+            return res.status(404).send({
+                success: false,
+                Message: "User not found",
+                error: "User not found"
+            });
+        }
+
+        // If OTP is expired, send a message and resend a new OTP
+        const isExpired = Date.now() > user.otpExpiry;
+
+        if (isExpired) {
+            // Generate a new OTP if expired
+            const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+            user.otp = newOtp;
+            user.otpExpiry = Date.now() + 260000; // 10 minute expiry
+
+            await user.save();
+
+            // Log the OTP for debugging
+            console.log('Generated OTP:', newOtp);
+
+            // Send OTP to user's email using user.name directly
+            await sendEmailFun(
+                user.email,
+                "Verify your email",
+                "",
+                verifactionEmailTemplate(user.name, newOtp),  // Pass user.name here
+                newOtp,
+                user.name
+            );
+            console.log('Email sent to user:', user.name);
+
+            return res.status(200).send({
+                success: true,
+                Message: "A new OTP has been sent to your email.",
+            });
+        } else {
+            return res.status(200).send({
+                success: true,
+                Message: "OTP is still valid, please enter it to verify your email.",
+            });
+        }
+
+    } catch (error) {
+        console.error("Error during resending OTP:", error);
+        res.status(500).send({
+            success: false,
+            Message: "Internal Server Error during OTP resend",
+            error: error.message
+        });
+    }
+};
+
 
 // Login Api 
 export const loginController = async (req, res) => {
@@ -227,13 +343,13 @@ export const loginController = async (req, res) => {
 
         let token = JWT.sign({ _id: user._id }, process.env.JWT_Key, { expiresIn: "1d" });
 
-        const cookieoptions = {
-            httpOnly: true,
-            secure: true,
-            sameSite: "None",
-        };
+        // const cookieoptions = {
+        //     httpOnly: true,
+        //     secure: true,
+        //     sameSite: "None",
+        // };
 
-        res.cookie("Cookie_token", token, cookieoptions);
+        // res.cookie("Cookie_token", token, cookieoptions);
 
         res.status(200).send({
             success: true,
@@ -252,157 +368,49 @@ export const loginController = async (req, res) => {
 };
 
 
-// export const loginController = async (req, res) => {
+// logout Api 
+// export const logout = async (req, res) => {
 //     try {
-//         const { email, password, otp } = req.body;
+//         const userId = req.user?._id;
+//         console.log("🧑 User ID:", userId);
 
-//         // Check if email and password are provided
-//         if (!email || !password) {
-//             return res.status(400).send({
-//                 success: false,
-//                 message: "Email and password are required"
-//             });
+//         const token = req.cookies?.Cookie_token || req.headers?.authorization?.split(" ")[1];
+//         console.log("🔑 Token from cookie or header:", token);
+
+//         if (!token) {
+//             console.log("Token not found in request");
+//             return res.status(401).json({ success: false, message: "Please login first" });
 //         }
 
-//         let user = await SignupModel.findOne({ email });
-//         if (!user) {
-//             return res.status(404).send({
-//                 success: false,
-//                 message: "User not registered, please sign-up first"
-//             });
-//         }
+//         // Remove token field from DB (not user)
+//         const result = await SignupModel.updateOne(
+//             { _id: userId },
+//             { $unset: { token: "" } }
+//         );
+//         console.log("🗑️ Token field removed from user in DB:", result);
 
-//         // If the email is not verified, handle OTP verification
-//         if (!user.verify_email) {
-//             // If OTP is provided, verify it
-//             if (otp) {
-//                 const isExpired = Date.now() > user.otpExpiry; // Check if OTP is expired
-
-//                 if (isExpired) {
-//                     const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-//                     user.otp = newOtp;
-//                     user.otpExpiry = Date.now() + 10 * 60 * 1000; // Set new expiry for 10 minutes
-//                     await user.save();
-
-//                     // Send the new OTP via email
-//                     await sendEmailFun(
-//                         user.email,
-//                         "Verify your email",
-//                         "",
-//                         verifactionEmailTemplate(user.name, newOtp),
-//                         newOtp,
-//                         user.name
-//                     );
-
-//                     return res.status(400).send({
-//                         success: false,
-//                         message: "OTP has expired. A new OTP has been sent to your email."
-//                     });
-//                 }
-
-//                 // If OTP is valid and not expired, mark email as verified
-//                 if (otp === user.otp) {
-//                     user.verify_email = true;
-//                     user.otp = null; // Clear OTP after successful verification
-//                     user.otpExpiry = null; // Clear OTP expiry
-//                     await user.save();
-//                 } else {
-//                     return res.status(400).send({
-//                         success: false,
-//                         message: "Invalid OTP"
-//                     });
-//                 }
-//             } else {
-//                 // If no OTP provided, prompt user to enter OTP
-//                 return res.status(400).send({
-//                     success: false,
-//                     message: "Email not verified. Please enter the OTP sent to your email."
-//                 });
-//             }
-//         }
-
-//         // Proceed with password verification after email verification
-//         const match = await comparingPassword(password, user.password);
-//         if (!match) {
-//             return res.status(401).send({
-//                 success: false,
-//                 message: "Incorrect password"
-//             });
-//         }
-
-//         // Generate JWT token if password is correct
-//         const token = JWT.sign({ _id: user._id }, process.env.JWT_Key, { expiresIn: "1d" });
-
-//         // Set token in cookies for session
-//         res.cookie("Cookie_token", token, {
+//         // Clear cookie
+//         res.clearCookie("Cookie_token", {
 //             httpOnly: true,
 //             secure: true,
-//             sameSite: "None", // For cross-origin requests
+//             sameSite: "None",
 //         });
 
-//         return res.status(200).send({
+//         res.status(200).json({
 //             success: true,
-//             message: "Logged in successfully",
-//             user,
-//             token
+//             message: "Logged out successfully",
+//             userId,
+//             result,
 //         });
 
 //     } catch (error) {
-//         console.error("Error during login:", error);
-//         res.status(500).send({
+//         console.error("❌ Error during logout:", error);
+//         res.status(500).json({
 //             success: false,
-//             message: "Something went wrong while logging in",
-//             error: error.message
+//             message: "Something went wrong while logging out",
 //         });
 //     }
 // };
-
-
-
-
-// logout Api 
-export const logout = async (req, res) => {
-    try {
-        const userId = req.user?._id;
-        console.log("🧑 User ID:", userId);
-
-        const token = req.cookies?.Cookie_token || req.headers?.authorization?.split(" ")[1];
-        console.log("🔑 Token from cookie or header:", token);
-
-        if (!token) {
-            console.log("Token not found in request");
-            return res.status(401).json({ success: false, message: "Please login first" });
-        }
-
-        // Remove token field from DB (not user)
-        const result = await SignupModel.updateOne(
-            { _id: userId },
-            { $unset: { token: "" } }
-        );
-        console.log("🗑️ Token field removed from user in DB:", result);
-
-        // Clear cookie
-        res.clearCookie("Cookie_token", {
-            httpOnly: true,
-            secure: true,
-            sameSite: "None",
-        });
-
-        res.status(200).json({
-            success: true,
-            message: "Logged out successfully",
-            userId,
-            result,
-        });
-
-    } catch (error) {
-        console.error("❌ Error during logout:", error);
-        res.status(500).json({
-            success: false,
-            message: "Something went wrong while logging out",
-        });
-    }
-};
 
 
 

@@ -1,12 +1,155 @@
 import { useState, useRef, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import Swal from 'sweetalert2'
+import Cookies from "js-cookie"
 
 const Verify = () => {
   const [otp, setOtp] = useState(Array(6).fill(""))
-  const [isVerifying, setIsVerifying] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
+  const inputRefs = useRef([]) 
+  const navigate = useNavigate()
 
-  const inputRefs = useRef([])
+  const email = Cookies.get("userEmail") // Get the email from cookies
+  console.log("Email verification code retrieved from cookies:", email) // Debugging line
+  
+  useEffect(() => {
+    if (!email) {
+      navigate("/register")
+    }
+  }, [email, navigate])
+
+  const verifyOtp = async () => {
+    const otpString = otp.join("")
+    if (otpString.length !== 6) {
+      setError("Please enter all 6 digits")
+      Swal.fire({
+        title: "Error",
+        text: "Please enter all 6 digits of the OTP.",
+        icon: "error",
+        confirmButtonText: "OK",
+      })
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+    console.log("Sending for verification:", { otp: otpString, email })
+
+    try {
+      const result = await fetch("http://localhost:7000/api/userRoute/emailVerification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ otp: otpString, email }),
+      })
+
+      const data = await result.json()
+      console.log(data)
+
+      if (data.success) {
+        setSuccess(true)
+        setError(null)
+        Swal.fire({
+          title: 'Success!',
+          text: 'Verification successful!',
+          icon: 'success',
+          confirmButtonText: 'OK'
+        }).then(() => {
+          navigate("/login")
+        })
+      } else {
+        setError("Invalid verification code. Please try again.")
+        setOtp(Array(6).fill("")) // Reset OTP inputs
+        Swal.fire({
+          title: 'Error',
+          text: 'Invalid verification code. Please try again.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        })
+      }
+    } catch (error) {
+      setError("An error occurred. Please try again later.")
+      console.error(error)
+      Swal.fire({
+        title: 'Error!',
+        text: 'An error occurred. Please try again later.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const resendOtp = async () => {
+    setOtp(Array(6).fill("")) 
+    setError(null)
+    setSuccess(false)
+    inputRefs.current[0]?.focus()
+
+    const otpExpiry = Cookies.get("otpExpiry")
+    const isExpired = Date.now() > otpExpiry
+
+    if (isExpired) {
+      setError("OTP has expired, requesting a new one.")
+      Swal.fire({
+        title: "OTP Expired",
+        text: "OTP has expired, requesting a new one.",
+        icon: "warning",
+        confirmButtonText: "OK"
+      })
+
+      try {
+        const result = await fetch("http://localhost:7000/api/userRoute/resend", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+        })
+
+        const data = await result.json()
+        console.log(data)
+
+        const newOtpExpiry = Date.now() + 600000 // 10 minutes
+        Cookies.set("otpExpiry", newOtpExpiry, { expires: 1 / 144 })
+
+        if (data.success) {
+          Swal.fire({
+            title: 'OTP Sent',
+            text: data.Message || 'A new OTP has been sent to your email.',
+            icon: 'success',
+            confirmButtonText: 'OK'
+          })
+        } else {
+          Swal.fire({
+            title: 'Failed',
+            text: data.Message || 'Failed to resend OTP.',
+            icon: 'error',
+            confirmButtonText: 'OK'
+          })
+        }
+      } catch (error) {
+        Swal.fire({
+          title: 'Error!',
+          text: 'An error occurred while resending OTP. Please try again later.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        })
+        console.error(error)
+      }
+    } else {
+      Swal.fire({
+        title: "Error",
+        text: "OTP is still valid. Please enter it to verify your email.",
+        icon: "error",
+        confirmButtonText: "OK"
+      })
+    }
+  }
 
   useEffect(() => {
     inputRefs.current = inputRefs.current.slice(0, 6)
@@ -14,7 +157,6 @@ const Verify = () => {
 
   const handleChange = (index, value) => {
     if (!/^\d*$/.test(value)) return
-
     const newOtp = [...otp]
     newOtp[index] = value.substring(0, 1)
     setOtp(newOtp)
@@ -35,11 +177,9 @@ const Verify = () => {
         inputRefs.current[index - 1]?.focus()
       }
     }
-
     if (e.key === "ArrowLeft" && index > 0) {
       inputRefs.current[index - 1]?.focus()
     }
-
     if (e.key === "ArrowRight" && index < 5) {
       inputRefs.current[index + 1]?.focus()
     }
@@ -47,105 +187,55 @@ const Verify = () => {
 
   const handlePaste = (e) => {
     e.preventDefault()
-    const pastedData = e.clipboardData.getData("text")
-
-    if (!/^\d+$/.test(pastedData)) return
-
-    const digits = pastedData.substring(0, 6).split("")
-    const newOtp = [...otp]
-
-    digits.forEach((digit, index) => {
-      if (index < 6) newOtp[index] = digit
-    })
-
-    setOtp(newOtp)
-
-    const nextEmptyIndex = newOtp.findIndex((val) => val === "")
-    if (nextEmptyIndex !== -1) {
-      inputRefs.current[nextEmptyIndex]?.focus()
-    } else {
-      inputRefs.current[5]?.focus()
+    const paste = e.clipboardData.getData("Text")
+    if (/^\d{6}$/.test(paste)) {
+      setOtp(paste.split("").map((d) => d.trim()))
     }
-  }
-
-  const verifyOtp = () => {
-    const otpString = otp.join("")
-
-    if (otpString.length !== 6) {
-      setError("Please enter all 6 digits")
-      return
-    }
-
-    setIsVerifying(true)
-
-    setTimeout(() => {
-      if (otpString === "123456") {
-        setSuccess(true)
-        setError(null)
-      } else {
-        setError("Invalid verification code. Please try again.")
-      }
-      setIsVerifying(false)
-    }, 1500)
-  }
-
-  const resendOtp = () => {
-    setOtp(Array(6).fill(""))
-    setError(null)
-    setSuccess(false)
-    inputRefs.current[0]?.focus()
-    alert("A new verification code has been sent!")
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800">Verification Code</h1>
-          <p className="text-gray-600 mt-2">We've sent a verification code to your email</p>
+    <div className="flex justify-center items-center min-h-screen">
+      <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold text-center mb-6">Verify Your Email</h2>
+        <div className="flex justify-center mb-4">
+          <p>Enter the OTP sent to <strong>{email}</strong></p>
         </div>
 
-        <div className="mb-8">
-          <div className="grid grid-cols-6 gap-2 mb-6">
-            {/* boxes */}
-            {otp.map((digit, index) => (
-              <input
-                key={index}
-                ref={(el) => (inputRefs.current[index] = el)}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                onPaste={index === 0 ? handlePaste : undefined}
-                className="w-full h-14 text-center text-xl font-bold border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
-                aria-label={`Digit ${index + 1} of verification code`}
-              />
-            ))}
-          </div>
+        <div className="flex justify-center mb-6">
+          {otp.map((value, index) => (
+            <input
+              key={index}
+              ref={(el) => (inputRefs.current[index] = el)}
+              type="text"
+              value={value}
+              onChange={(e) => handleChange(index, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(index, e)}
+              onPaste={handlePaste}
+              maxLength={1}
+              className="w-10 h-10 text-center text-xl border border-gray-300 rounded-md mx-1 focus:outline-none focus:ring-2 focus:ring-rose-500"
+            />
+          ))}
+        </div>
 
-          {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
-          {success && <p className="text-green-500 text-sm text-center mb-4">Verification successful!</p>}
+        {error && <div className="text-red-500 text-center mb-4">{error}</div>}
+        {success && <div className="text-green-500 text-center mb-4">Verification successful!</div>}
 
+        <div className="flex justify-between items-center mb-4">
           <button
             onClick={verifyOtp}
-            disabled={isVerifying || success}
-            className={`w-full py-3 px-4 rounded-md shadow-sm text-white font-medium ${
-              isVerifying || success ? "cursor-not-allowed" : "bg-[#FF5252] hover:bg-black"
-            }`}
+            disabled={isLoading}
+            className="bg-rose-600 text-white py-2 px-4 rounded-md focus:outline-none hover:bg-rose-700"
           >
-            {isVerifying ? "Verifying..." : success ? "Verified" : "Verify Code"}
+            {isLoading ? "Verifying..." : "Verify OTP"}
           </button>
-        </div>
 
-        <div className="text-center">
-          <p className="text-gray-600 text-sm">
-            Didn't receive the code?{" "}
-            <button onClick={resendOtp} className="text-[#FF5252] hover:underline font-medium">
-              Resend
-            </button>
-          </p>
+          <button
+            onClick={resendOtp}
+            className="text-rose-600 hover:underline"
+            disabled={isLoading}
+          >
+            Resend OTP
+          </button>
         </div>
       </div>
     </div>

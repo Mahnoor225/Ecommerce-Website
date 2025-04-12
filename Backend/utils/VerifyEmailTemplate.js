@@ -7,6 +7,6 @@ export const verifactionEmailTemplate = (NewUser, verifyCode) => {
         <h3>please verify your email address:</h3>
         <h1>Your verification code is ${verifyCode},</h1>  <!-- Just use verifyCode here -->
         <p>Click the link below to verify your email address:</p>
-        <a href="http://yourdomain.com/verify?code=${verifyCode}">Verify your email address</a>
+        <a href="http://localhost:5173/verify?code=${verifyCode}">Verify your email address</a>
     `;
 };
