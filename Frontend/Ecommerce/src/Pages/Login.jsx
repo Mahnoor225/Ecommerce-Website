@@ -43,15 +43,21 @@ const Login = () => {
       const result = await response.json();
      console.log(result);
       if (result.success) {
-        Cookies.set('authToken', result.token, { expires: 1 });
+        Cookies.set('authToken', result.token, { expires: 1 }); // expires in 1 day
         Cookies.set('userEmail', result.user.email, { expires: 1 });
         Cookies.set('userName', result.user.name, { expires: 1 });
+        Cookies.set('userAvatar', result.user.avatar, { expires: 1 });
+        Cookies.set('userid', result.user._id, { expires: 1 });
+        
 
         dispatch(loginSuccess({
+          userId: result.user._id,
+          userAvatar: result.user.avatar,
           name: result.user.name,
           email: result.user.email,
           token: result.token
         }));
+        
         Swal.fire({
           title: "Success",
           text: result.message,

@@ -1,12 +1,14 @@
 import { useState } from "react";
-import {  useNavigate } from "react-router-dom";
+import { useNavigate  } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useSelector } from "react-redux";
+import { setEmail } from "../../redux/AuthSlice";
+import { useDispatch } from "react-redux";
 const ResetForgetPassword = () => {
   const email = useSelector((state) => state.auth.user?.email || "");
 
   const navigate = useNavigate();
-
+  const dispatch = useDispatch();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState(null);
@@ -22,11 +24,14 @@ const ResetForgetPassword = () => {
     setError(null);
 
     try {
-      const res = await fetch("http://localhost:7000/api/userRoute/reset-ForgetPassword", {
-        method: "PUT", // make sure this matches your backend
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const res = await fetch(
+        "http://localhost:7000/api/userRoute/reset-ForgetPassword",
+        {
+          method: "POST", // make sure this matches your backend
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
       const result = await res.json();
 
@@ -61,6 +66,13 @@ const ResetForgetPassword = () => {
       <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
         <h2 className="text-xl font-bold mb-4">Reset Password</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => dispatch(setEmail(e.target.value))}
+            placeholder="Enter your email"
+            className="w-full px-4 py-2 border rounded-md"
+          />
           <input
             type="password"
             placeholder="New Password"

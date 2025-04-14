@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-
+import { setEmail } from "../../redux/AuthSlice";
 const VerifyForgetOtp = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -23,11 +23,14 @@ const VerifyForgetOtp = () => {
     }
 
     try {
-      const res = await fetch("http://localhost:7000/api/userRoute/verify-ForgetPassword", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp }),
-      });
+      const res = await fetch(
+        "http://localhost:7000/api/userRoute/verify-ForgetPassword",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, otp }),
+        }
+      );
 
       const result = await res.json();
 
@@ -40,7 +43,6 @@ const VerifyForgetOtp = () => {
         });
         navigate("/resetForgetPassword", { state: { email } });
       } else {
-        // Handling expired OTP error from the backend response
         if (result.message === "OTP has expired") {
           Swal.fire({
             icon: "error",
@@ -48,7 +50,7 @@ const VerifyForgetOtp = () => {
             text: "Your OTP has expired. Please request a new one.",
             confirmButtonColor: "#FF5252",
           }).then(() => {
-            navigate("/forgetPassword"); // Redirect user to request a new OTP
+            navigate("/forgetPassword");
           });
         } else {
           setError(result.message || "Invalid OTP.");
@@ -69,7 +71,7 @@ const VerifyForgetOtp = () => {
           <input
             type="email"
             value={email}
-            onChange={(e) => dispatch(e.target.value)}
+            onChange={(e) => dispatch(setEmail(e.target.value))}
             placeholder="Enter your email"
             className="w-full px-4 py-2 border rounded-md"
           />

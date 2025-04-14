@@ -453,65 +453,48 @@ export const getAllUsersController = async (req, res) => {
 // Update User API
 export const updateUserController = async (req, res) => {
     try {
-        // Extract user details from the request body and userId from the request parameters
-        const { id} = req.params;
-        console.log(id);
-        const { name, email, password, confirmPassword } = req.body;
-
-        // Check if the userId exists
-        if (!id) {
-            return res.status(400).send({
-                success: false,
-                Message: "User ID is required"
-            });
-        }
-
-        // Find user by ID in the database
-        let user = await SignupModel.findById(id);
-        if (!user) {
-            return res.status(404).send({
-                success: false,
-                Message: "User not found"
-            });
-        }
-
-        // Optionally validate fields before updating
-        if (name) user.name = name;
-        if (email) user.email = email;
-        
-
-        // If password and confirmPassword are provided, check if they match
-        if (password && confirmPassword) {
-            if (password !== confirmPassword) {
-                return res.status(400).send({
-                    success: false,
-                    Message: "Password and confirm password do not match"
-                });
-            }
-            // Hash the password if it's being updated
-            user.password = await hashPassword(password, confirmPassword);
-        }
-
-        // Save the updated user
-        await user.save();
-
-        // Send success response with the updated user details
-        res.status(200).send({
-            success: true,
-            Message: "User updated successfully",
-            user
-        });
-
+      const { id } = req.params;
+      const { name, email, password } = req.body;
+  
+      if (!id) {
+        return res.status(400).send({ success: false, message: "User ID is required" });
+      }
+  
+      const user = await SignupModel.findById(id);
+      if (!user) {
+        return res.status(404).send({ success: false, message: "User not found" });
+      }
+  
+      if (name) user.name = name;
+      if (email) user.email = email;
+  
+      // Only hash if password is provided
+      let finalHashedPassword = await bcrypt.hash(password, 10); 
+      if (password) user.password = finalHashedPassword;
+  
+      await user.save();
+  
+      const { password: pwd, otp, otpExpiry, ...safeUser } = user.toObject();
+  
+      res.status(200).send({
+        success: true,
+        message: "User updated successfully",
+        user: {
+          ...safeUser,
+          _id: user._id,
+          avatar: user.avatar,
+        },
+      });
     } catch (error) {
-        res.status(500).send({
-            success: false,
-            Message: "User updated  Internal Server Error",
-            error: error.message
-        });
+      res.status(500).send({
+        success: false,
+        message: "Internal server error while updating user",
+        error: error.message,
+      });
     }
-};
-
-
+  };
+  
+  
 
 
  // delete Controller
@@ -645,7 +628,40 @@ export async function useAvatarController(req, res) {
         });
     }
 }
-
+// update avatar controller 
+export const uploadAvatarController = async (req, res) => {
+    try {
+      const userId = req.user._id; // Assumes requireSignIn middleware adds user to req
+      const file = req.file;
+  
+      if (!file) {
+        return res.status(400).send({ success: false, message: "No file uploaded" });
+      }
+  
+      // Upload to Cloudinary
+      const result = await cloudinary.uploader.upload(file.path, {
+        folder: "avatars",
+      });
+  
+      // Update user avatar in DB
+      const user = await SignupModel.findById(userId);
+      user.avatar = result.secure_url;
+      await user.save();
+  
+      res.status(200).send({
+        success: true,
+        message: "Avatar uploaded successfully",
+        avatar: result.secure_url,
+      });
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      res.status(500).send({
+        success: false,
+        message: "Avatar upload failed",
+        error: error.message,
+      });
+    }
+  };
 
 // removeimageCloundary 
 

@@ -7,13 +7,18 @@ import Verify from './Pages/Verify';
 import ForgetPassword from './Pages/ForgetPassword';
 import VerifyForgetOtp from './Pages/VerifyForgetOtp';
 import ResetForgetPassword from './Pages/ResetForgetPassword';
+import MyAccount from './Pages/MyAccount';
+import Product from './Pages/Product';
+import ProductDetails from './Pages/ProductDetails';
+import Layout from './Componets/Layout';
+import Electronics from './Pages/Electronics';
 
 
 
 function App() {
   return (
     <BrowserRouter>
-    <Navbar/>
+    <Layout>
       <Routes>
        <Route path='/' element={<Home/>} />
         <Route path='/login' element={<Login />} />
@@ -22,7 +27,12 @@ function App() {
         <Route path='/verifyForgetOtp' element={<VerifyForgetOtp/>} />
         <Route path='/resetForgetPassword' element={<ResetForgetPassword/>} />
         <Route path='/verify' element={<Verify/>} />
+        <Route path='/myaccount' element={<MyAccount/>} />
+        <Route path='/product' element={<Product/>} />
+        <Route path='/product/:id' element={<ProductDetails/>} />
+        <Route path='/electronics' element={<Electronics/>} />
       </Routes>
+      </Layout>
     </BrowserRouter>
   );
 }
