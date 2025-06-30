@@ -1,6 +1,6 @@
 import React from 'react'
 import Slider from './Slider'
-import ProductListing from './Product'
+import Product from './Product'
 import Category from './Category'
 // import Electronics from './Electronics'
 // import Beauty from './Beauty'
@@ -13,7 +13,7 @@ const Home = () => {
     <div>
       <Slider/>
       <Category/>
-      <ProductListing/>
+      <Product/>
       {/* <Electronics/>
       <Beauty/> */}
     </div>

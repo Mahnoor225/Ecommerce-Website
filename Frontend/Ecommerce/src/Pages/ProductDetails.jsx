@@ -3,6 +3,8 @@ import axios from "axios";
 import { Star, ShoppingCart, Heart, Share2, Truck } from "lucide-react";
 import { useParams } from "react-router-dom";
 import ReactImageMagnify from "react-image-magnify";
+import { addtoCart } from "../../redux/action/action";
+import { useDispatch } from "react-redux";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -10,14 +12,12 @@ const ProductDetails = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState("M");
   const [quantity, setQuantity] = useState(1);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const { data } = await axios.get(
-          `https://dummyjson.com/products/${id}`
-        );
-        console.log(data);
+        const { data } = await axios.get(`https://dummyjson.com/products/${id}`);
         setProduct(data);
         if (data.sizes?.length) {
           setSelectedSize(data.sizes[0]);
@@ -44,6 +44,10 @@ const ProductDetails = () => {
     return <div className="text-center py-20">Loading...</div>;
   }
 
+  const senditem = (product) => {
+    dispatch(addtoCart(product));
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col lg:flex-row gap-8">
@@ -55,23 +59,21 @@ const ProductDetails = () => {
               <div
                 key={index}
                 className={`border-2 rounded cursor-pointer ${
-                  selectedImage === index
-                    ? "border-gray-800"
-                    : "border-gray-200"
+                  selectedImage === index ? "border-gray-800" : "border-gray-200"
                 }`}
                 onClick={() => setSelectedImage(index)}
               >
                 <img
                   src={image}
                   alt={`Product thumbnail ${index + 1}`}
-                  className="w-16 h-20 object-cover"
+                  className="w-14 h-14 object-cover"
                 />
               </div>
             ))}
           </div>
 
           {/* Main Image with Magnifier */}
-          <div className="flex-1 ">
+          <div className="flex-1 max-w-md">
             <ReactImageMagnify
               {...{
                 smallImage: {
@@ -87,11 +89,11 @@ const ProductDetails = () => {
                 enlargedImageContainerStyle: {
                   background: "#fff",
                   zIndex: 10,
-                  overflow: "hidden", // ⛔ Prevent scrollbars
+                  overflow: "hidden",
                 },
                 enlargedImageContainerDimensions: {
-                  width: "70%",
-                  height: "60%", // Adjust this to avoid page overflow
+                  width: "50%",
+                  height: "50%",
                 },
                 isHintEnabled: true,
                 shouldHideHintAfterFirstActivation: false,
@@ -102,9 +104,7 @@ const ProductDetails = () => {
 
         {/* Product Info */}
         <div className="lg:w-2/5">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            {product.title}
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">{product.title}</h1>
 
           <div className="flex items-center gap-4 mb-4">
             <span className="text-gray-600">
@@ -130,19 +130,13 @@ const ProductDetails = () => {
           </div>
 
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-xl font-bold text-gray-900">
-              ₹{product.price}
-            </span>
+            <span className="text-xl font-bold text-gray-900">₹{product.price}</span>
             {product.originalPrice && (
               <>
-                <span className="text-gray-500 line-through">
-                  ₹{product.originalPrice}
-                </span>
+                <span className="text-gray-500 line-through">₹{product.originalPrice}</span>
                 <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
                   {Math.round(
-                    ((product.originalPrice - product.price) /
-                      product.originalPrice) *
-                      100
+                    ((product.originalPrice - product.price) / product.originalPrice) * 100
                   )}
                   % OFF
                 </span>
@@ -151,8 +145,7 @@ const ProductDetails = () => {
           </div>
 
           <div className="bg-green-50 text-green-700 px-3 py-2 rounded-md mb-4">
-            Available In Stock:{" "}
-            <span className="font-medium">{product.stock} Items</span>
+            Available In Stock: <span className="font-medium">{product.stock} Items</span>
           </div>
 
           <p className="text-gray-600 mb-6">{product.description}</p>
@@ -181,9 +174,7 @@ const ProductDetails = () => {
 
           {/* Quantity */}
           <div className="mb-6">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">
-              QUANTITY:
-            </h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">QUANTITY:</h3>
             <div className="flex items-center">
               <button
                 onClick={decreaseQuantity}
@@ -211,7 +202,10 @@ const ProductDetails = () => {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
-            <button className="flex-1 bg-gray-900 text-white py-3 px-6 rounded-md hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+            <button
+              className="flex-1 bg-gray-900 text-white py-3 px-6 rounded-md hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+              onClick={() => senditem(product)}
+            >
               <ShoppingCart className="h-5 w-5" />
               Add to Cart
             </button>

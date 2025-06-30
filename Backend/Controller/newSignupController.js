@@ -7,16 +7,16 @@ import bcrypt from 'bcrypt';
 import { verifactionEmailTemplate } from '../utils/VerifyEmailTemplate.js';
 import { sendEmailFun } from '../database/SendEmail.js';
 
-import { v2 as cloudinary } from 'cloudinary';
-import fs from 'fs';
+// import { v2 as cloudinary } from 'cloudinary';
+// import fs from 'fs';
 
-export default cloudinary.config({
-//   url: process.env.CLOUDINARY_URL ,
-  cloud_name: 'dizrz6ejl',
-  api_key: '822293373532438',
-  api_secret: 'V4GBX7Uk9brjhr03twZUf_bHSkI',
-  secure: true
-});
+// export default cloudinary.config({
+// //   url: process.env.CLOUDINARY_URL ,
+//   cloud_name: 'dizrz6ejl',
+//   api_key: '822293373532438',
+//   api_secret: 'V4GBX7Uk9brjhr03twZUf_bHSkI',
+//   secure: true
+// });
 // Register Api 
 export const RegisterController = async (req, res) => {
     try {
@@ -100,7 +100,6 @@ export const RegisterController = async (req, res) => {
         });
     }
 };
-
 // Email Varifation 
 // export const EmailVerification = async (req, res) => {
 //     try {

@@ -117,7 +117,7 @@ const MyAccount = () => {
               ) : (
                 <img
                   className="w-10 h-10 rounded-full cursor-pointer object-cover"
-                  src={avatarUrl}
+                  src='https://img.freepik.com/free-photo/decoration-artificial-flower-table-filtered-image-processed_1232-3629.jpg?semt=ais_hybrid&w=740'
                   alt="avatar"
                   onClick={avatarInput}
                 />

@@ -4,8 +4,9 @@ import { Eye, EyeOff } from "lucide-react";
 import Swal from "sweetalert2";
 import Cookies from "js-cookie";
 import { useDispatch } from "react-redux";
-import { registerSuccess } from "../../redux/AuthSlice";
+// import { registerSuccess } from "../../redux/AuthSlice";
 import { TailSpin } from 'react-loader-spinner'
+import { registerSuccess } from "../../redux/action/action";
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);

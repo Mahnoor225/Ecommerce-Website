@@ -11,4 +11,3 @@ const dbConnection = async()=>{
     }
 }
 export default dbConnection
-

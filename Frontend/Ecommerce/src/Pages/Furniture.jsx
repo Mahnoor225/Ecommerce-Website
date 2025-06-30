@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { addtoCart } from "../../redux/action/action";
 import { useDispatch } from "react-redux";
-const  Beauty = () => {
+const Furniture = () => {
   const [products, setProducts] = useState([]);
   const [hoveredProduct, setHoveredProduct] = useState(null);
   const [wishlist, setWishlist] = useState([]);
@@ -20,7 +20,7 @@ const  Beauty = () => {
   const dispatch = useDispatch();
   useEffect(() => {
     const fetchData = async () => {
-      const { data } = await axios.get("https://dummyjson.com/products/category/beauty");
+      const { data } = await axios.get("https://dummyjson.com/products/category/furniture");
       setProducts(data.products);
     };
     fetchData();
@@ -52,12 +52,13 @@ const  Beauty = () => {
       });
     }
   };
- const senditem=(product)=>{
+  const senditem=(product)=>{
     dispatch(addtoCart(product));
   }
+
   return (
     <section className="px-4 py-6">
-      <h2 className="text-2xl font-semibold mb-4">Beauty (Women)</h2>
+      <h2 className="text-2xl font-semibold mb-4">Furniture</h2>
       <div className="relative">
         {/* Left Scroll Button */}
         <button
@@ -85,8 +86,8 @@ const  Beauty = () => {
                 </div>
 
                 {/* Product Image */}
-               <Link to={`/product/${product.id}`} key={product.id}>
-               <div className="relative h-48 overflow-hidden">
+                <Link to={`/product/${product.id}`} key={product.id}>
+                <div className="relative h-48 overflow-hidden">
                   <img
                     src={product.images[0]}
                     alt={product.title}
@@ -121,7 +122,7 @@ const  Beauty = () => {
                     </button>
                   </div>
                 </div>
-               </Link>
+                </Link>
 
                 {/* Product Info */}
                 <div className="p-4">
@@ -162,4 +163,4 @@ const  Beauty = () => {
   );
 };
 
-export default Beauty;
+export default Furniture;

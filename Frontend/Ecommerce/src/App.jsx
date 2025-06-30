@@ -2,7 +2,6 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import Login from './Pages/Login'; // ✅ CORRECT
 import Home from './Pages/Home'; // ✅ CORRECT
 import Register from './Pages/Register'; // ✅ CORRECT
-import Navbar from './Componets/Navbar';
 import Verify from './Pages/Verify';
 import ForgetPassword from './Pages/ForgetPassword';
 import VerifyForgetOtp from './Pages/VerifyForgetOtp';
@@ -12,7 +11,8 @@ import Product from './Pages/Product';
 import ProductDetails from './Pages/ProductDetails';
 import Layout from './Componets/Layout';
 import Electronics from './Pages/Electronics';
-
+import ProductFilterPage from './Pages/ProductFilterPage';
+import Cart from './Pages/Cart';
 
 
 function App() {
@@ -30,7 +30,9 @@ function App() {
         <Route path='/myaccount' element={<MyAccount/>} />
         <Route path='/product' element={<Product/>} />
         <Route path='/product/:id' element={<ProductDetails/>} />
+        <Route path='/cart' element={<Cart/>} />
         <Route path='/electronics' element={<Electronics/>} />
+        <Route path="/filter" element={<ProductFilterPage/>} />
       </Routes>
       </Layout>
     </BrowserRouter>

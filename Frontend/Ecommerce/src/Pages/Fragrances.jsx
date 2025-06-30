@@ -9,18 +9,17 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { addtoCart } from "../../redux/action/action";
-import { useDispatch } from "react-redux";
-const  Beauty = () => {
+
+const Fragrances = () => {
   const [products, setProducts] = useState([]);
   const [hoveredProduct, setHoveredProduct] = useState(null);
   const [wishlist, setWishlist] = useState([]);
   const sliderRef = useRef(null);
   const [canScrollRight, setCanScrollRight] = useState(true);
-  const dispatch = useDispatch();
+
   useEffect(() => {
     const fetchData = async () => {
-      const { data } = await axios.get("https://dummyjson.com/products/category/beauty");
+      const { data } = await axios.get("https://dummyjson.com/products/category/Fragrances");
       setProducts(data.products);
     };
     fetchData();
@@ -52,12 +51,10 @@ const  Beauty = () => {
       });
     }
   };
- const senditem=(product)=>{
-    dispatch(addtoCart(product));
-  }
+
   return (
     <section className="px-4 py-6">
-      <h2 className="text-2xl font-semibold mb-4">Beauty (Women)</h2>
+      <h2 className="text-2xl font-semibold mb-4">Fragrances </h2>
       <div className="relative">
         {/* Left Scroll Button */}
         <button
@@ -74,6 +71,7 @@ const  Beauty = () => {
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {products.map((product) => (
+            <Link to={`/product/${product.id}`} key={product.id}>
               <div
                 className="flex-shrink-0 w-[250px] bg-white rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl relative"
                 onMouseEnter={() => setHoveredProduct(product.id)}
@@ -85,8 +83,7 @@ const  Beauty = () => {
                 </div>
 
                 {/* Product Image */}
-               <Link to={`/product/${product.id}`} key={product.id}>
-               <div className="relative h-48 overflow-hidden">
+                <div className="relative h-48 overflow-hidden">
                   <img
                     src={product.images[0]}
                     alt={product.title}
@@ -121,7 +118,6 @@ const  Beauty = () => {
                     </button>
                   </div>
                 </div>
-               </Link>
 
                 {/* Product Info */}
                 <div className="p-4">
@@ -141,12 +137,13 @@ const  Beauty = () => {
                       )?.toFixed(0)}
                     </span>
                   </div>
-                  <button className="w-full py-2 bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2" onClick={() => senditem(product)}>
+                  <button className="w-full py-2 bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
                     <ShoppingCart className="w-4 h-4" />
                     ADD TO CART
                   </button>
                 </div>
               </div>
+            </Link>
           ))}
         </div>
 
@@ -162,4 +159,4 @@ const  Beauty = () => {
   );
 };
 
-export default Beauty;
+export default Fragrances;

@@ -4,8 +4,9 @@ import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import Cookies from 'js-cookie';
 import { useDispatch } from 'react-redux';
-import { loginSuccess } from "../../redux/AuthSlice";
+// import { loginSuccess } from "../../redux/AuthSlice";
 import { TailSpin } from "react-loader-spinner";
+import { loginSuccess } from "../../redux/action/action";
 
 const Login = () => {
   const [email, setEmail] = useState("");
